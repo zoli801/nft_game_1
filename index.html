@@ -969,6 +969,13 @@
             userBalance -= currentBet;
             coinsCount.textContent = userBalance;
 
+            // Отправляем обновление баланса в бот
+            WebApp.sendData(JSON.stringify({
+                action: "update_balance",
+                balance: userBalance,
+                token: token
+            }));
+
             isSpinning = true;
             spinBtn.disabled = true;
             betButtons.forEach(btn => btn.disabled = true);
@@ -1069,11 +1076,18 @@
                         '#ffd700'
                     );
 
-                    // Зачисляем выигрыш
+                    // Зачисляем выигрыш (только для монет)
                     if (actualWinSector.type === "coins") {
                         const winAmount = parseInt(actualWinSector.value);
                         userBalance += winAmount;
                         coinsCount.textContent = userBalance;
+
+                        // Отправляем обновление баланса в бот
+                        WebApp.sendData(JSON.stringify({
+                            action: "update_balance",
+                            balance: userBalance,
+                            token: token
+                        }));
                     }
 
                     setTimeout(() => {
@@ -1093,7 +1107,7 @@
             try {
                 const data = JSON.parse(event);
 
-                if (data.balance) {
+                if (data.action === "update_balance") {
                     userBalance = data.balance === "∞" ? Infinity : parseInt(data.balance);
                     coinsCount.textContent = data.balance;
                 }
@@ -1101,6 +1115,12 @@
                 console.error("Ошибка парсинга сообщения:", e);
             }
         });
+
+        // Запрос актуального баланса при загрузке
+        WebApp.sendData(JSON.stringify({
+            action: "get_balance",
+            token: token
+        }));
     });
 </script>
 </body>
