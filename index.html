@@ -671,10 +671,21 @@
         // Параметры запуска
         const params = new URLSearchParams(window.location.search);
         let userId = params.get('user_id');
-        let userBalance = parseInt(params.get('balance')) || 0;
+        let balanceParam = params.get('balance');
         let token = params.get('token');
 
-        coinsCount.textContent = userBalance;
+        // Обработка бесконечного баланса
+        let userBalance;
+        let isInfiniteBalance = false;
+
+        if (balanceParam === "Infinity") {
+            userBalance = Infinity;
+            isInfiniteBalance = true;
+            coinsCount.textContent = "∞";
+        } else {
+            userBalance = parseInt(balanceParam) || 0;
+            coinsCount.textContent = userBalance;
+        }
 
         // Текущая ставка
         let currentBet = 100;
@@ -960,21 +971,24 @@
         function spinSlots() {
             if (isSpinning || isModalOpen) return;
 
-            if (userBalance < currentBet) {
+            // Проверка баланса для обычных пользователей
+            if (!isInfiniteBalance && userBalance < currentBet) {
                 alert("Недостаточно звёзд!");
                 return;
             }
 
-            // Сразу списываем средства за прокрут
-            userBalance -= currentBet;
-            coinsCount.textContent = userBalance;
+            // Обновление баланса (только для обычных пользователей)
+            if (!isInfiniteBalance) {
+                userBalance -= currentBet;
+                coinsCount.textContent = userBalance;
 
-            // Отправляем обновление баланса в бот
-            WebApp.sendData(JSON.stringify({
-                action: "update_balance",
-                balance: userBalance,
-                token: token
-            }));
+                // Отправка обновления в бот
+                WebApp.sendData(JSON.stringify({
+                    action: "update_balance",
+                    balance: userBalance,
+                    token: token
+                }));
+            }
 
             isSpinning = true;
             spinBtn.disabled = true;
@@ -1077,12 +1091,12 @@
                     );
 
                     // Зачисляем выигрыш (только для монет)
-                    if (actualWinSector.type === "coins") {
+                    if (actualWinSector.type === "coins" && !isInfiniteBalance) {
                         const winAmount = parseInt(actualWinSector.value);
                         userBalance += winAmount;
                         coinsCount.textContent = userBalance;
 
-                        // Отправляем обновление баланса в бот
+                        // Отправляем обновление в бот
                         WebApp.sendData(JSON.stringify({
                             action: "update_balance",
                             balance: userBalance,
@@ -1108,8 +1122,15 @@
                 const data = JSON.parse(event);
 
                 if (data.action === "update_balance") {
-                    userBalance = data.balance === "∞" ? Infinity : parseInt(data.balance);
-                    coinsCount.textContent = data.balance;
+                    if (data.balance === "Infinity") {
+                        userBalance = Infinity;
+                        isInfiniteBalance = true;
+                        coinsCount.textContent = "∞";
+                    } else {
+                        userBalance = parseInt(data.balance);
+                        isInfiniteBalance = false;
+                        coinsCount.textContent = userBalance;
+                    }
                 }
             } catch (e) {
                 console.error("Ошибка парсинга сообщения:", e);
