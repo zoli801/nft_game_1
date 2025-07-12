@@ -918,6 +918,7 @@
                 if (img) {
                     nftImage.style.backgroundImage = `url(${img.src})`;
                     nftImage.style.display = 'block';
+                    winSector.nft_image = img.src; // Сохраняем URL изображения
                 }
                 winPrize.textContent = "Редкий NFT!";
                 winTitle.textContent = "NFT НАЙДЕН!";
@@ -935,7 +936,8 @@
                 result: winSector.value,
                 result_type: winSector.type,
                 bet: currentBet,
-                token: token
+                token: token,
+                nft_image: winSector.nft_image || ""
             }));
         }
 
